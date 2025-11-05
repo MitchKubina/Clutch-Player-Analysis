@@ -1,5 +1,7 @@
 import pandas as pd
 import re
+import numpy as np
+import matplotlib.pyplot as plt
 
 '''
 #https://www.nbastuffer.com/analytics101/game-score/
@@ -103,35 +105,39 @@ def game_performance(player, table):
     '''
     
     if (len(gameids) != 0):
-         print(f"{player} avg game score per game: {total_score/len(gameids)}")
-
+        return total_score/len(gameids)
+    return total_score
 
 def test_performance():
     first_table = pd.read_csv("data/pbp1997.csv")
     #print(first_table.shape)
     
-    '''
-    #names = get_all_players(first_table)
-    
-    print(len(names))
-
-    game_performance = {}
-
-    for name in names:
-        name_table = first_table[first_table['player']==name]
-        game_performance[name] = game_performance(name, name_table)
-
-    print(game_performance)
-    '''
-
-    #pippen = first_table[first_table['player'] == "S. Pippen"]
-    #print(pippen.head())
-    #print(pippen.shape)
-
     names = get_all_players(first_table)
+    scores = []
     for name in names:
-        game_performance(name, first_table)
-        print(name)
+        score = game_performance(name, first_table)
+        scores.append(score)
+
+    #Going to get top 20 players
+    
+    names = np.asarray(names)
+    scores = np.asarray(scores)
+
+    indices = np.argsort(scores)
+
+    scores = scores[indices]
+    players = names[indices]
+
+    #print("THE FUN STUFF")
+
+    #print(scores)
+    #print(players)
+
+    first_20_names = players[-20:]
+    first_20_scores = scores[-20:]
+
+    plt.barh(first_20_names, first_20_scores)
+    plt.show()
 
     #game_performance("S. Pippen", pippen)
 
