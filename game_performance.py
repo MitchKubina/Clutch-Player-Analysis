@@ -109,7 +109,7 @@ def game_performance(player, table):
     return total_score
 
 def test_performance():
-    first_table = pd.read_csv("data/pbp1997.csv")
+    first_table = pd.read_csv("data/pbp2023.csv")
     #print(first_table.shape)
     
     names = get_all_players(first_table)
@@ -137,6 +137,9 @@ def test_performance():
     first_20_scores = scores[-20:]
 
     plt.barh(first_20_names, first_20_scores)
+    plt.xlabel("Player Score/Game")
+    plt.ylabel("Player Name")
+    plt.title("Top 20 Players of 2023 by Player Score/Game")
     plt.show()
 
     #game_performance("S. Pippen", pippen)
