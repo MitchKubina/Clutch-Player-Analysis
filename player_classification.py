@@ -9,7 +9,7 @@ def find_all_diffs():
     all_files = os.listdir('data')
     
     diffs = []
-
+    overall_performance = []
     
     file = "data/pbp2020.csv"
 
@@ -28,8 +28,19 @@ def find_all_diffs():
 
         diff = last_2_min_score - first_46_min_score
         diffs.append((player, diff))
+        overall_performance.append((player, last_2_min_score))
     
-    print(diffs)
+    diffs_sorted = sorted(diffs, key=lambda x: x[1], reverse=True)
+    performance_sorted = sorted(overall_performance, key=lambda x: x[1], reverse=True)
+
+    print("Players who perform the best in clutch time compared to rest of game:")
+    for player, diff in diffs_sorted:
+        print(f"{player}: {diff}")
+
+    print("\nOverall Best Players in Clutch Time:")
+    for player, score in performance_sorted:
+        print(f"{player}: {score}") 
+
 
 
 if __name__ == "__main__":
