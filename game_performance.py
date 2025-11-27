@@ -1,160 +1,120 @@
 import pandas as pd
-import re
 import numpy as np
 import matplotlib.pyplot as plt
 
-'''
-#https://www.nbastuffer.com/analytics101/game-score/
-
-Game Score Formula=(Points)+0.4*(Field Goals Made)+0.7*(Offensive Rebounds)+0.3*(Defensive rebounds)
-+(Steals)+0.7*(Assists)+0.7*(Blocked Shots)
-- 0.7*(Field Goal Attempts)-0.4*(Free Throws Missed) - 0.4*(Personal Fouls)-(Turnovers)
-do it per minute?
-'''
+"""
+NBA Game Score Formula:
+Game Score = PTS
+           + 0.4 * FGM
+           + 0.7 * OREB
+           + 0.3 * DREB
+           + STL
+           + 0.7 * AST
+           + 0.7 * BLK
+           - 0.7 * FGA
+           - 0.4 * FT Miss
+           - 0.4 * PF
+           - TOV
+"""
 
 def game_performance(player, table):
-    
-    def parse_description(phrase):
-        nonlocal blocks, steals, game_def_rebounds, game_off_rebounds, turnovers
-        
-        if "STEAL" in phrase:
-            steals += 1
-        elif "REBOUND" in phrase:
-            match = re.search(r'Off:(\d+)\s+Def:(\d+)', phrase)
-            game_off_rebounds = int(match.group(1))
-            game_def_rebounds =  int(match.group(2))
-        elif "BLOCK" in phrase:
-            blocks += 1
-        elif 'Turnover' in phrase:
-            turnovers += 1
-        
-    def parse_shot(phrase):
-        nonlocal game_points,num_field_goals
-        
-        num_field_goals += 1
 
-        if '3' in phrase:
-            game_points += 3
-        else:
-            game_points += 2
-    
-    def parse_free_throw(phrase):
-        nonlocal game_points, free_throw_misses
-        
-        if ('MISS' in phrase):
-            free_throw_misses += 1
-        else:
-            game_points += 1
+    player_df = table[table["player"] == player]
 
-    steals = 0
     points = 0
-    off_rebounds = 0
-    def_rebounds = 0
-    num_field_goals = 0
-    free_throw_misses = 0
-
-    game_off_rebounds = 0
-    game_def_rebounds = 0
-    game_points = 0
-    fouls = 0
-    missed_shots = 0
+    fgm = 0
+    fga = 0
+    ftm = 0
+    ft_miss = 0
+    oreb = 0
+    dreb = 0
+    steals = 0
+    assists = 0
     blocks = 0
     turnovers = 0
-    
-    gameids = []
-    
-    reduced_table = table[table['player'] == player]
-    for index, row in reduced_table.iterrows():
-        #print(row)
+    fouls = 0
 
-        if row['gameid'] not in gameids:
-            off_rebounds += game_off_rebounds
-            def_rebounds += game_def_rebounds
-            points += game_points
+    for _, row in player_df.iterrows():
+        play = row["type"]
+        desc = row["desc"]
 
-            game_points = 0
-            game_off_rebounds = 0
-            game_def_rebounds = 0
-            gameids.append(row['gameid'])
-        
-        match row['type']:
-            case 'Made Shot':
-                parse_shot(row['desc'])
-            case 'Rebound':
-                parse_description(row['desc'])
-            case 'Foul':
-                fouls += 1
-            case 'Missed Shot':
-                num_field_goals += 1
-                missed_shots += 1
-            case 'Free Throw':
-                parse_free_throw(row['desc'])
-            case 'NaN':
-                parse_description(row['desc'])
+        desc = row["desc"] if isinstance(row["desc"], str) else ""
 
-    
-    #Total score I think
-    #Don't have assists, may need to adjust for that
-    total_score = points + 0.4 * num_field_goals + 0.7 * off_rebounds + 0.3 * def_rebounds  + steals + 0.7 * blocks - 0.7 * num_field_goals - 0.4 * free_throw_misses - 0.4 * fouls - turnovers
-    
-    '''
-    Game Score Formula=(Points)+0.4*(Field Goals Made)+0.7*(Offensive Rebounds)+0.3*(Defensive rebounds)
-    +(Steals)+0.7*(Assists)+0.7*(Blocked Shots)
-    - 0.7*(Field Goal Attempts)-0.4*(Free Throws Missed) - 0.4*(Personal Fouls)-(Turnovers)
-    
-    '''
-    
-    if (len(gameids) != 0):
-        return total_score/len(gameids)
-    return total_score
+        if play == "Made Shot":
+            fgm += 1
+            fga += 1
+            points += 3 if "3PT" in desc else 2
 
-def test_performance():
-    first_table = pd.read_csv("data/pbp2023.csv")
-    #print(first_table.shape)
-    
-    names = get_all_players(first_table)
-    scores = []
-    for name in names:
-        score = game_performance(name, first_table)
-        scores.append(score)
+        elif play == "Missed Shot":
+            fga += 1
 
-    #Going to get top 20 players
-    
-    names = np.asarray(names)
-    scores = np.asarray(scores)
+        elif play == "Free Throw":
+            if "MISS" in desc:
+                ft_miss += 1
+            else:
+                points += 1
+                ftm += 1
 
-    indices = np.argsort(scores)
+        elif play == "Rebound":
+            if "off" in row and row["off"] == 1:
+                oreb += 1
+            else:
+                dreb += 1
 
-    scores = scores[indices]
-    players = names[indices]
+        elif "STEAL" in desc:
+            steals += 1
 
-    #print("THE FUN STUFF")
+        elif "assist" in desc or "AST" in desc:
+            assists += 1
 
-    #print(scores)
-    #print(players)
+        elif play == "Turnover":
+            turnovers += 1
 
-    first_20_names = players[-20:]
-    first_20_scores = scores[-20:]
+        elif play == "Block":
+            blocks += 1
 
-    plt.barh(first_20_names, first_20_scores)
-    plt.xlabel("Player Score/Game")
-    plt.ylabel("Player Name")
-    plt.title("Top 20 Players of 2023 by Player Score/Game")
-    plt.show()
+        elif play == "Foul":
+            fouls += 1
 
-    #game_performance("S. Pippen", pippen)
+    game_score = (
+        points
+        + 0.4 * fgm
+        + 0.7 * oreb
+        + 0.3 * dreb
+        + steals
+        + 0.7 * assists
+        + 0.7 * blocks
+        - 0.7 * fga
+        - 0.4 * ft_miss
+        - 0.4 * fouls
+        - turnovers
+    )
 
+    return game_score
 
 
 def get_all_players(table):
-    player_names = []
-    for index, row in table.iterrows():
-        #player_index = 6
-        #print(row)
-        if (row['player'] not in player_names):
-            player_names.append(row["player"])
+    return table["player"].unique()
 
-    return player_names
+
+def test_performance():
+    first_table = pd.read_csv("data/pbp2023.csv")
+
+    names = get_all_players(first_table)
+    scores = [game_performance(name, first_table) for name in names]
+
+    names = np.asarray(names)
+    scores = np.asarray(scores)
+    indices = np.argsort(scores)
+
+    best_names = names[indices][-20:]
+    best_scores = scores[indices][-20:]
+
+    plt.barh(best_names, best_scores)
+    plt.xlabel("Game Score")
+    plt.ylabel("Player")
+    plt.title("Top 20 Players by Game Score (2023)")
+    plt.show()
 
 
 if __name__ == "__main__":
