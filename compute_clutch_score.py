@@ -35,12 +35,12 @@ def plot_top_clutch_players(df, top_n=10):
 
 
 if __name__ == "__main__":
-    df = pd.read_csv("player_features_2020.csv")
+    df = pd.read_csv("features_by_year/player_features_2020.csv")
 
     df = compute_clutch_score(df)
 
     top20 = top_clutch_players(df)
-    print("Top 20 Clutch Players of 2020 (According to Your Model):")
+    print("Top 20 Clutch Players of 2020:")
     print(top20[["player", "clutch_score", "gs_diff", "fg_pct_diff", "to_rate_diff"]])
 
     top20.to_csv("top20_clutch_players_2020.csv", index=False)
